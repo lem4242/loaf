@@ -1,0 +1,25 @@
+{
+  "name": "loaf",
+  "owner": {
+    "name": "D3R"
+  },
+  "description": "Loaf skills and image generation tools.",
+  "plugins": [
+    {
+      "name": "loaf",
+      "displayName": "Loaf",
+      "source": "https://raw.githubusercontent.com/lem4242/D3R/main/plugins/loaf",
+      "description": "Skills and connectors that lend a hand, so Loafers can keep homes happier, one comfy thing at a time.",
+      "version": "0.4.0",
+      "keywords": ["loaf", "d3r", "mcp", "dashboard", "trading-pulse", "product-copy", "pdp", "sales-dashboard", "ga4-dashboard", "growthbook-dashboard"]
+    },
+    {
+      "name": "d3r-design",
+      "displayName": "Images",
+      "source": "https://raw.githubusercontent.com/lem4242/D3R/main/plugins/d3r-design",
+      "description": "Image generation — Flux, Seedream, Midjourney, Gemini.",
+      "version": "0.4.0",
+      "keywords": ["image-generation", "flux", "seedream", "midjourney", "gemini"]
+    }
+  ]
+}
