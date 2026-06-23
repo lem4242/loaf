@@ -40,9 +40,9 @@ connector (GrowthBook MV tools).
 
 | Key | Default | Notes |
 |---|---|---|
-| `T_FLAGS` | `mcp__loaf-composite__growthbook_mv_get_feature_flags` | Verify per host. |
-| `T_EXPS` | `mcp__loaf-composite__growthbook_mv_get_experiments` | Verify per host. |
-| `T_STALE` | `mcp__loaf-composite__growthbook_mv_get_stale_feature_flags` | Verify per host. |
+| `T_FLAGS` | `mcp__plugin_loaf_loaf-composite__growthbook_mv_get_feature_flags` | Verify per host. |
+| `T_EXPS` | `mcp__plugin_loaf_loaf-composite__growthbook_mv_get_experiments` | Verify per host. |
+| `T_STALE` | `mcp__plugin_loaf_loaf-composite__growthbook_mv_get_stale_feature_flags` | Verify per host. |
 
 ## What it shows
 

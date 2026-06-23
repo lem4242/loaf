@@ -5,11 +5,11 @@
   "schemaVersion": 1,
   "description": "Loaf Sales Dashboard — channel-level sales dashboard (Web/POS/OMS) from the loaf connector. 7/30/90-day toggle, stacked daily trend, top products and categories. No GA4 dependency.",
   "mcpTools": [
-    "mcp__loaf__get_sales_aggregate",
-    "mcp__loaf__get_product_sales",
-    "mcp__loaf__get_product_type_sales"
+    "mcp__plugin_loaf_loaf__get_sales_aggregate",
+    "mcp__plugin_loaf_loaf__get_product_sales",
+    "mcp__plugin_loaf_loaf__get_product_type_sales"
   ],
-  "mcpServerNames": ["loaf"]
+  "mcpServerNames": ["plugin_loaf_loaf"]
 }
 </script>
 <html lang="en">
@@ -153,7 +153,7 @@ const CFG={
   REF_DATE:"auto",
   DEFAULT_DAYS:7,
   LOOKBACK_DAYS:200,
-  T_SALES:"mcp__loaf__get_sales_aggregate"
+  T_SALES:"mcp__plugin_loaf_loaf__get_sales_aggregate"
 };
 
 const GBP0=new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0});

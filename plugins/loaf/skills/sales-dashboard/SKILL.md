@@ -28,7 +28,7 @@ channel-level sales dashboard for Loaf, pulling live from the **`loaf`** connect
    unavailable".
 
 2. **Verify the tool name.** The artifact's `CFG` block defaults to
-   `mcp__loaf__get_sales_aggregate`. Tool names are instance-specific — if the loaf
+   `mcp__plugin_loaf_loaf__get_sales_aggregate`. Tool names are instance-specific — if the loaf
    server is mounted under a different ID, discover the real name via ToolSearch
    (search `get_sales_aggregate`) and update `CFG.T_SALES` before opening.
 
@@ -44,7 +44,7 @@ channel-level sales dashboard for Loaf, pulling live from the **`loaf`** connect
 | `REF_DATE` | `"auto"` | Auto-detects last complete day. Pin to override. |
 | `DEFAULT_DAYS` | `7` | Initial window (7/30/90). |
 | `LOOKBACK_DAYS` | `200` | Single base pull covers 90-day view + 90-day prior with slack. |
-| `T_SALES` | `mcp__loaf__get_sales_aggregate` | Verify per host. |
+| `T_SALES` | `mcp__plugin_loaf_loaf__get_sales_aggregate` | Verify per host. |
 
 ## What it shows
 

@@ -5,12 +5,12 @@
   "schemaVersion": 1,
   "description": "Loaf Trading Dashboard — fast, on-brand dashboard pulling live from the loaf (sales) and loaf-composite (GA4) connectors. 7/30/90-day toggle, KPIs first, click-to-explore. Auto-detects the last complete day of data.",
   "mcpTools": [
-    "mcp__loaf__get_sales_aggregate",
-    "mcp__loaf-composite__ga4_official_run_report"
+    "mcp__plugin_loaf_loaf__get_sales_aggregate",
+    "mcp__plugin_loaf_loaf-composite__ga4_official_run_report"
   ],
   "mcpServerNames": [
-    "loaf",
-    "loaf-composite"
+    "plugin_loaf_loaf",
+    "plugin_loaf_loaf-composite"
   ]
 }
 </script>
@@ -170,8 +170,8 @@ const CFG={
   DEFAULT_DAYS:7,
   LOOKBACK_DAYS:200,          // covers the 90-day window + its 90-day prior, with slack for staging lag
   GA4_PROPERTY:"256796183", // loaf.com GA4 property — instance-specific, confirm at launch
-  T_SALES:"mcp__loaf__get_sales_aggregate",            // loaf (sales) connector — verify the exact tool name on this host
-  T_GA4:"mcp__loaf-composite__ga4_official_run_report" // loaf-composite (GA4) connector — verify the exact tool name on this host
+  T_SALES:"mcp__plugin_loaf_loaf__get_sales_aggregate",            // loaf (sales) connector — verify the exact tool name on this host
+  T_GA4:"mcp__plugin_loaf_loaf-composite__ga4_official_run_report" // loaf-composite (GA4) connector — verify the exact tool name on this host
 };
 /* =============================================================== */
 

@@ -35,8 +35,8 @@ artifact and it pulls on open.
    missing, the dashboard shows a "connector bridge unavailable" / load error.
 
 2. **Verify the tool names for this host.** The template's `CFG` block defaults to
-   the plugin's canonical names — `mcp__loaf__get_sales_aggregate` and
-   `mcp__loaf-composite__ga4_official_run_report`. Tool names are
+   the plugin's canonical names — `mcp__plugin_loaf_loaf__get_sales_aggregate` and
+   `mcp__plugin_loaf_loaf-composite__ga4_official_run_report`. Tool names are
    **instance-specific**: if a deployment mounts the servers under different IDs
    (e.g. an Obot composite with namespaced tools, or per-session connector GUIDs),
    discover the real names via ToolSearch (search `get_sales_aggregate` /

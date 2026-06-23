@@ -5,12 +5,12 @@
   "schemaVersion": 1,
   "description": "Loaf GrowthBook Dashboard — snapshot of feature flags, experiments, and stale flags from the loaf-composite (GrowthBook) connector. Environment filter, flag status table, running experiments, stale flag alerts.",
   "mcpTools": [
-    "mcp__loaf-composite__growthbook_mv_get_feature_flags",
-    "mcp__loaf-composite__growthbook_mv_get_experiments",
-    "mcp__loaf-composite__growthbook_mv_list_feature_keys",
-    "mcp__loaf-composite__growthbook_mv_get_stale_feature_flags"
+    "mcp__plugin_loaf_loaf-composite__growthbook_mv_get_feature_flags",
+    "mcp__plugin_loaf_loaf-composite__growthbook_mv_get_experiments",
+    "mcp__plugin_loaf_loaf-composite__growthbook_mv_list_feature_keys",
+    "mcp__plugin_loaf_loaf-composite__growthbook_mv_get_stale_feature_flags"
   ],
-  "mcpServerNames": ["loaf-composite"]
+  "mcpServerNames": ["plugin_loaf_loaf-composite"]
 }
 </script>
 <html lang="en">
@@ -209,10 +209,10 @@
 
 <script>
 const CFG={
-  T_FLAGS:"mcp__loaf-composite__growthbook_mv_get_feature_flags",
-  T_EXPS:"mcp__loaf-composite__growthbook_mv_get_experiments",
-  T_KEYS:"mcp__loaf-composite__growthbook_mv_list_feature_keys",
-  T_STALE:"mcp__loaf-composite__growthbook_mv_get_stale_feature_flags"
+  T_FLAGS:"mcp__plugin_loaf_loaf-composite__growthbook_mv_get_feature_flags",
+  T_EXPS:"mcp__plugin_loaf_loaf-composite__growthbook_mv_get_experiments",
+  T_KEYS:"mcp__plugin_loaf_loaf-composite__growthbook_mv_list_feature_keys",
+  T_STALE:"mcp__plugin_loaf_loaf-composite__growthbook_mv_get_stale_feature_flags"
 };
 
 const ask=t=>{if(window.cowork&&window.cowork.sendPrompt)window.cowork.sendPrompt(t);};

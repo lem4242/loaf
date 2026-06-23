@@ -29,7 +29,7 @@ connector (GA4 tools).
    plugin. If missing, the dashboard shows "connector bridge unavailable".
 
 2. **Verify the tool name.** Defaults to
-   `mcp__loaf-composite__ga4_official_run_report`. Discover the real name via
+   `mcp__plugin_loaf_loaf-composite__ga4_official_run_report`. Discover the real name via
    ToolSearch (search `ga4_official_run_report`) and update `CFG.T_GA4` if the
    server is mounted under a different ID.
 
@@ -48,7 +48,7 @@ connector (GA4 tools).
 | `DEFAULT_DAYS` | `7` | Initial window (7/30/90). |
 | `LOOKBACK_DAYS` | `200` | Base pull window. |
 | `GA4_PROPERTY` | `256796183` | loaf.com property. |
-| `T_GA4` | `mcp__loaf-composite__ga4_official_run_report` | Verify per host. |
+| `T_GA4` | `mcp__plugin_loaf_loaf-composite__ga4_official_run_report` | Verify per host. |
 
 ## What it shows
 
