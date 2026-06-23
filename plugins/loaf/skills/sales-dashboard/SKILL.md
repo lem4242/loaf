@@ -1,19 +1,19 @@
 ---
 name: sales-dashboard
 description: >-
-  Launch the Loaf "Sales Pulse" — a sales-only executive dashboard pulling live
+  Launch the Loaf "Sales Dashboard" — a sales-only executive dashboard pulling live
   from the loaf connector and rendering revenue, orders, AOV, and channel mix
   (Web / POS / OMS) in one interactive Cowork artifact with a 7/30/90-day
   toggle and stacked daily channel trend. Use when someone wants a pure sales
   view without web analytics — "how are sales by channel", "POS vs web
   breakdown", "orders and AOV", "revenue by channel", or any sales-only
-  overview. Not for web traffic (use ga4-pulse) or a combined view (use
-  trading-pulse).
+  overview. Not for web traffic (use ga4-dashboard) or a combined view (use
+  trading-dashboard).
 ---
 
-# Loaf Sales Pulse
+# Loaf Sales Dashboard
 
-A single self-contained HTML artifact (`assets/sales-pulse.html`) that renders a
+A single self-contained HTML artifact (`assets/sales-dashboard.html`) that renders a
 channel-level sales dashboard for Loaf, pulling live from the **`loaf`** connector.
 
 - **Source of record:** `get_sales_aggregate` (daily orders by `order_location` —

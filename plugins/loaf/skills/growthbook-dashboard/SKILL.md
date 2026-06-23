@@ -1,20 +1,20 @@
 ---
 name: growthbook-dashboard
 description: >-
-  Launch the Loaf "GrowthBook Pulse" — a feature-flags and experiments snapshot
+  Launch the Loaf "GrowthBook Dashboard" — a feature-flags and experiments snapshot
   dashboard pulling live from the loaf-composite connector (GrowthBook tools) and
   rendering flag status, stale flag alerts, running experiments, and recent
   results in one interactive Cowork artifact with an environment filter. Use when
   someone wants to see what flags are on or off, which experiments are running,
   what's stale and needs cleanup, or a general GrowthBook overview — "feature
   flags", "what experiments are running", "stale flags", "growthbook dashboard",
-  "what's live in production". Not for sales or web analytics (use trading-pulse,
-  sales-pulse, or ga4-pulse).
+  "what's live in production". Not for sales or web analytics (use trading-dashboard,
+  sales-dashboard, or ga4-dashboard).
 ---
 
-# Loaf GrowthBook Pulse
+# Loaf GrowthBook Dashboard
 
-A single self-contained HTML artifact (`assets/growthbook-pulse.html`) that renders
+A single self-contained HTML artifact (`assets/growthbook-dashboard.html`) that renders
 a snapshot view of the Loaf GrowthBook workspace, pulling from the **`loaf-composite`**
 connector (GrowthBook MV tools).
 

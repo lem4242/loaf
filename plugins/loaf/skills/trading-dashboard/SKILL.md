@@ -1,21 +1,21 @@
 ---
-name: trading-pulse
+name: trading-dashboard
 description: >-
-  Launch the Loaf "Trading Pulse" — a fast, on-brand executive dashboard that
+  Launch the Loaf "Trading Dashboard" — a fast, on-brand executive dashboard that
   pulls live from the loaf (sales) and loaf-composite (GA4) connectors and
   renders revenue, orders, AOV, channel mix, top products, web sessions and
   acquisition in one interactive Cowork artifact with a 7/30/90-day toggle. Use
   this whenever someone wants a Loaf sales/trading overview, a KPI dashboard, a
-  "how's trading", "sales pulse", "revenue dashboard", "loaf numbers", or a
+  "how's trading", "sales dashboard", "revenue dashboard", "loaf numbers", or a
   visual summary of Loaf performance over a period — even when they don't name
   the connectors. Not for one-off figures (call get_sales_aggregate or
   ga4_official_run_report directly for a single number); this builds the
   standing dashboard.
 ---
 
-# Loaf Trading Pulse
+# Loaf Trading Dashboard
 
-A single self-contained HTML artifact (`assets/trading-pulse.html`) that renders
+A single self-contained HTML artifact (`assets/trading-dashboard.html`) that renders
 an interactive trading dashboard for Loaf. It reads **live** from two connectors
 in this plugin:
 

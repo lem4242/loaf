@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
-  "name": "Loaf Trading Pulse",
+  "name": "Loaf Trading Dashboard",
   "schemaVersion": 1,
-  "description": "Loaf Trading Pulse — fast, on-brand dashboard pulling live from the loaf (sales) and loaf-composite (GA4) connectors. 7/30/90-day toggle, KPIs first, click-to-explore. Auto-detects the last complete day of data.",
+  "description": "Loaf Trading Dashboard — fast, on-brand dashboard pulling live from the loaf (sales) and loaf-composite (GA4) connectors. 7/30/90-day toggle, KPIs first, click-to-explore. Auto-detects the last complete day of data.",
   "mcpTools": [
     "mcp__loaf__get_sales_aggregate",
     "mcp__loaf-composite__ga4_official_run_report"
@@ -18,7 +18,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Loaf — Trading Pulse</title>
+<title>Loaf — Trading Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <style>
   :root{color-scheme:light;
@@ -99,7 +99,7 @@
     <div class="l">
       <div class="mark">Lf</div>
       <div>
-        <h1>Loaf — Trading Pulse</h1>
+        <h1>Loaf — Trading Dashboard</h1>
         <div class="meta" id="window-label">Loading…</div>
       </div>
     </div>
@@ -155,7 +155,7 @@
     </div>
 
     <div class="note"><b>Note.</b> Revenue, orders &amp; AOV come from the <b>loaf</b> connector (all channels: Web, POS, OMS) — the accurate source of record. GA4 (<b>loaf-composite</b>) supplies web <b>traffic only</b> (sessions); web conversion = web orders ÷ sessions.</div>
-    <footer>Loaf Trading Pulse · live from connectors on open · GBP</footer>
+    <footer>Loaf Trading Dashboard · live from connectors on open · GBP</footer>
   </div>
 
 <script>

@@ -2,7 +2,7 @@
   "name": "d3r-design",
   "displayName": "D3R Design",
   "version": "0.4.0",
-  "description": "D3R design tools — Miro, Figma, image generation and other tools. One Obot composite, per-user connect URL resolved by Obot.",
+  "description": "D3R design tools — Miro, Figma, image generation and other tools.",
   "skills": [
     "./skills/d3r-design-images"
   ]

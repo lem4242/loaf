@@ -11,7 +11,7 @@
       "source": "./plugins/loaf",
       "description": "Skills and connectors that lend a hand, so Loafers can keep homes happier, one comfy thing at a time.",
       "version": "0.4.0",
-      "keywords": ["loaf", "d3r", "mcp", "dashboard", "trading-pulse", "product-copy", "pdp", "sales-dashboard", "ga4-dashboard", "growthbook-dashboard"]
+      "keywords": ["loaf", "d3r", "mcp", "dashboard", "trading-dashboard", "product-copy", "pdp", "sales-dashboard", "ga4-dashboard", "growthbook-dashboard"]
     },
     {
       "name": "d3r-design",

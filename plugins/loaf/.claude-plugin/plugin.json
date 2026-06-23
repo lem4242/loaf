@@ -4,7 +4,7 @@
   "version": "0.4.0",
   "description": "Skills and connectors that lend a hand, so Loafers can keep homes happier, one comfy thing at a time.",
   "skills": [
-    "./skills/trading-pulse",
+    "./skills/trading-dashboard",
     "./skills/loaf-product-copy",
     "./skills/sales-dashboard",
     "./skills/ga4-dashboard",

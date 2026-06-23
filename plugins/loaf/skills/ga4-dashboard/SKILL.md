@@ -1,19 +1,19 @@
 ---
 name: ga4-dashboard
 description: >-
-  Launch the Loaf "GA4 Pulse" — a web analytics dashboard pulling live from
+  Launch the Loaf "GA4 Dashboard" — a web analytics dashboard pulling live from
   the loaf-composite connector (GA4) and rendering sessions, users, engagement,
   transactions, revenue, and conversion rate with a 7/30/90-day toggle, channel
   breakdown, and top landing pages. Use when someone wants a web-traffic view
   — "how's the website", "sessions and engagement", "which channel converts
   best", "GA4 overview", "web conversion", "channel performance", "top landing
-  pages". Not for full-funnel sales (use trading-pulse) or sales-only views
-  (use sales-pulse).
+  pages". Not for full-funnel sales (use trading-dashboard) or sales-only views
+  (use sales-dashboard).
 ---
 
-# Loaf GA4 Pulse
+# Loaf GA4 Dashboard
 
-A single self-contained HTML artifact (`assets/ga4-pulse.html`) that renders a
+A single self-contained HTML artifact (`assets/ga4-dashboard.html`) that renders a
 web analytics dashboard for loaf.com, pulling live from the **`loaf-composite`**
 connector (GA4 tools).
 
