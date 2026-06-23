@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "loaf": {
+      "type": "http",
+      "url": "https://fig-thesleeproom-niki.d3r.com/mcp"
+    },
+    "loaf-composite": {
+      "type": "http",
+      "url": "https://ob.vivelia.co/mcp-connect/default-loaf-d4922e81pzkg5"
+    }
+  }
+}

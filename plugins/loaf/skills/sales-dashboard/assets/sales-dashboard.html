@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Loaf Sales Dashboard",
+  "schemaVersion": 1,
+  "description": "Loaf Sales Pulse — channel-level sales dashboard (Web/POS/OMS) from the loaf connector. 7/30/90-day toggle, stacked daily trend, top products and categories. No GA4 dependency.",
+  "mcpTools": [
+    "mcp__loaf__get_sales_aggregate",
+    "mcp__loaf__get_product_sales",
+    "mcp__loaf__get_product_type_sales"
+  ],
+  "mcpServerNames": ["loaf"]
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loaf — Sales Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root{color-scheme:light;
+    --bar:#0c0d0e;--bg:#ececed;--card:#fff;--ink:#1a1d1f;--muted:#6c7176;--line:#e3e4e7;
+    --teal:#16a6c9;--teal-d:#0f8aa9;--pos:#1f9d57;--posbg:#e3f5ea;--neg:#d8443a;--negbg:#fceae8;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);--r:14px;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.45}
+  .bar{background:var(--bar);color:#fff;padding:11px 20px;display:flex;align-items:center;
+    justify-content:space-between;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+  .bar .l{display:flex;align-items:center;gap:11px}
+  .mark{width:30px;height:30px;border-radius:8px;background:var(--teal);display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:14px;letter-spacing:-.5px}
+  .bar h1{font-size:15.5px;margin:0;font-weight:650;letter-spacing:-.2px}
+  .bar .meta{font-size:11.5px;color:#a9adb2}
+  .tabs{display:flex;gap:7px;background:#1b1d1f;padding:4px;border-radius:22px}
+  .tab{border:0;background:transparent;color:#c7cbcf;font-size:12.5px;font-weight:600;
+    padding:5px 14px;border-radius:18px;cursor:pointer;transition:.15s}
+  .tab.on{background:#fff;color:var(--ink)}
+  .wrap{max-width:1140px;margin:0 auto;padding:20px 20px 60px}
+  h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
+    font-weight:700;margin:26px 2px 11px}
+  .grid{display:grid;gap:14px}
+  .kpis{grid-template-columns:repeat(6,1fr)}
+  @media(max-width:940px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:540px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px;box-shadow:var(--shadow)}
+  .kpi .label{font-size:11px;color:var(--muted);font-weight:600}
+  .kpi .val{font-size:25px;font-weight:750;margin:6px 0 1px;letter-spacing:-.6px;color:var(--teal);min-height:30px}
+  .kpi .sub2{font-size:11px;color:var(--muted);min-height:14px}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;margin-top:8px;
+    padding:2px 9px;border-radius:20px;min-height:19px}
+  .delta.up{color:var(--pos);background:var(--posbg)}
+  .delta.down{color:var(--neg);background:var(--negbg)}
+  .delta.idle{background:#f0f1f2;color:transparent;min-width:54px}
+  .sk{color:transparent!important;background:linear-gradient(90deg,#ececec,#f6f6f6,#ececec);
+    background-size:200% 100%;animation:sh 1.1s infinite;border-radius:6px}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .row2{grid-template-columns:1.55fr 1fr}
+  .row3{grid-template-columns:1fr 1fr}
+  @media(max-width:860px){.row2,.row3{grid-template-columns:1fr}}
+  .card h3{margin:0 0 1px;font-size:14px;font-weight:700}
+  .card .cap{font-size:11.5px;color:var(--muted);margin:0 0 12px}
+  .chartbox{position:relative;height:262px}.chartbox.sm{height:220px}
+  .loadingline{font-size:12px;color:var(--muted);padding:14px 2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:right;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:600}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.clk{cursor:pointer;transition:background .12s}
+  tbody tr.clk:hover{background:#f5fbfd}
+  td.name{font-weight:600}
+  .bar2{height:6px;border-radius:4px;background:var(--teal);display:inline-block;vertical-align:middle;margin-left:7px;opacity:.85}
+  .ins{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:860px){.ins{grid-template-columns:1fr}}
+  .insight{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--teal);
+    border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+  .insight .ic{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--teal-d)}
+  .insight p{margin:7px 0 11px;font-size:13.5px;color:#373b3e}
+  .insight p b{color:var(--ink)}
+  .explore{border:1px solid var(--teal);background:#fff;color:var(--teal-d);font-weight:650;font-size:12px;
+    padding:5px 13px;border-radius:20px;cursor:pointer;transition:.13s}
+  .explore:hover{background:var(--teal);color:#fff}
+  .note{background:#fbfbfc;border:1px solid var(--line);border-left:3px solid #c9cdd2;
+    border-radius:10px;padding:10px 13px;font-size:11.5px;color:#6b7177;margin-top:16px}
+  .err{background:var(--negbg);border:1px solid #f3c9c4;color:#a8392d;border-radius:10px;padding:10px 13px;
+    font-size:12px;margin-top:12px;display:none}
+  footer{margin-top:22px;font-size:11px;color:var(--muted);text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="l">
+      <div class="mark">Lf</div>
+      <div>
+        <h1>Loaf — Sales Dashboard</h1>
+        <div class="meta" id="window-label">Loading…</div>
+      </div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab" data-n="7">7 days</button>
+      <button class="tab" data-n="30">30 days</button>
+      <button class="tab" data-n="90">90 days</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="err" class="err"></div>
+
+    <h2>Key stats</h2>
+    <div class="grid kpis" id="kpis"></div>
+
+    <h2>What stands out</h2>
+    <div class="ins" id="insights"></div>
+
+    <h2>Trend &amp; channel mix</h2>
+    <div class="grid row2">
+      <div class="card">
+        <h3>Daily revenue by channel</h3>
+        <p class="cap">Stacked — Web, POS, OMS</p>
+        <div class="chartbox"><canvas id="trend"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Revenue by channel</h3>
+        <p class="cap">Share of sales by order location</p>
+        <div class="chartbox"><canvas id="mix"></canvas></div>
+      </div>
+    </div>
+
+    <h2>Products</h2>
+    <div class="grid row3">
+      <div class="card">
+        <h3>Top products by revenue</h3>
+        <p class="cap">Click a row to explore in chat</p>
+        <table id="prodTable"><thead><tr><th>Product</th><th>Qty</th><th>Revenue</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>Revenue by product type</h3>
+        <p class="cap">Tier-2 categories</p>
+        <div class="chartbox sm"><canvas id="cats"></canvas></div>
+      </div>
+    </div>
+
+    <div class="note"><b>Note.</b> All data comes from the <b>loaf</b> connector — the source of record for revenue, orders, and AOV across all channels (Web, POS, OMS).</div>
+    <footer>Loaf Sales Dashboard · live from loaf connector on open · GBP</footer>
+  </div>
+
+<script>
+const CFG={
+  TODAY:"",
+  REF_DATE:"auto",
+  DEFAULT_DAYS:7,
+  LOOKBACK_DAYS:200,
+  T_SALES:"mcp__loaf__get_sales_aggregate"
+};
+
+const GBP0=new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0});
+const NUM=new Intl.NumberFormat('en-GB');
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CHAN_COLS=['#16a6c9','#1a1d1f','#c9a24b','#9c7bb5'];
+let N=CFG.DEFAULT_DAYS, charts={}, runId=0, REF=null;
+const TODAY=CFG.TODAY||new Date().toISOString().slice(0,10);
+
+const isoAdd=(d,days)=>{const t=new Date(d+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+days);return t.toISOString().slice(0,10);};
+const pretty=iso=>{const p=iso.split('-');return (+p[2])+' '+MON[(+p[1])-1];};
+const ask=t=>{if(window.cowork&&window.cowork.sendPrompt)window.cowork.sendPrompt(t);};
+const showErr=m=>{const e=document.getElementById('err');e.style.display='block';e.textContent='Could not load some data: '+m;};
+const money=v=>v>=1e6?'£'+(v/1e6).toFixed(2)+'M':'£'+NUM.format(Math.round(v));
+const pct=(a,b)=>b?((a/b-1)*100):0;
+const dstr=d=>(d>=0?'▲ ':'▼ ')+Math.abs(d).toFixed(1)+'%';
+const dcls=d=>d>=0?'up':'down';
+const inRange=(p,f,t)=>p>=f&&p<=t;
+
+const callCache=new Map();
+async function mcp(name,args){
+  const key=name+'|'+JSON.stringify(args);
+  if(callCache.has(key))return callCache.get(key);
+  const p=(async()=>{
+    const r=await window.cowork.callMcpTool(name,args);
+    if(r.isError)throw new Error((r.content&&r.content[0]&&r.content[0].text)||'tool error');
+    let d=r.structuredContent;if(d==null)d=JSON.parse(r.content[0].text);return d;
+  })();
+  callCache.set(key,p);
+  try{return await p;}catch(e){callCache.delete(key);throw e;}
+}
+
+let BASE=null;
+
+async function loadBase(){
+  if(BASE)return BASE;
+  const today=TODAY;
+  const from=isoAdd(today,-CFG.LOOKBACK_DAYS),mid=isoAdd(today,-Math.ceil(CFG.LOOKBACK_DAYS/2)),to=isoAdd(today,1);
+  const o={dataset:'orders',grain:'day',group_by:['order_location'],metrics:['order_count','value'],limit:500};
+  const [a,b]=await Promise.all([
+    mcp(CFG.T_SALES,{...o,date_from:mid,date_to:to}),
+    mcp(CFG.T_SALES,{...o,date_from:from,date_to:mid})
+  ]);
+  BASE={locDaily:[...(a.rows||[]),...(b.rows||[])]};
+  return BASE;
+}
+
+function detectRef(){
+  if(CFG.REF_DATE&&CFG.REF_DATE!=='auto')return CFG.REF_DATE;
+  const byDay={};BASE.locDaily.forEach(r=>byDay[r.period]=(byDay[r.period]||0)+r.order_count);
+  const days=Object.keys(byDay).filter(d=>byDay[d]>0).sort();
+  if(!days.length)return isoAdd(TODAY,-1);
+  const sorted=days.map(d=>byDay[d]).sort((a,b)=>a-b);
+  const med=sorted[Math.floor(sorted.length/2)]||0;
+  for(let i=days.length-1;i>=0;i--){if(byDay[days[i]]>=med*0.5)return days[i];}
+  return days[days.length-1];
+}
+
+function sliceDaily(f,t){
+  const byDay={};
+  BASE.locDaily.forEach(r=>{if(inRange(r.period,f,t)){const x=byDay[r.period]||(byDay[r.period]={value:0,order_count:0});x.value+=r.value;x.order_count+=r.order_count;}});
+  const rows=Object.keys(byDay).sort().map(p=>({period:p,...byDay[p]}));
+  const totals=rows.reduce((a,r)=>({value:a.value+r.value,order_count:a.order_count+r.order_count}),{value:0,order_count:0});
+  return{totals,rows};
+}
+function sliceLoc(f,t){
+  const byLoc={};
+  BASE.locDaily.forEach(r=>{if(inRange(r.period,f,t)){const x=byLoc[r.order_location]||(byLoc[r.order_location]={order_location:r.order_location,value:0,order_count:0});x.value+=r.value;x.order_count+=r.order_count;}});
+  const rows=Object.values(byLoc).sort((a,b)=>b.value-a.value);
+  const totals=rows.reduce((a,r)=>({value:a.value+r.value,order_count:a.order_count+r.order_count}),{value:0,order_count:0});
+  return{totals,rows};
+}
+function win(){
+  const ref=REF,cS=isoAdd(ref,-(N-1)),cE=ref;
+  const pE=isoAdd(cS,-1),pS=isoAdd(pE,-(N-1));
+  return{cS,cE,pS,pE,label:pretty(cS)+' – '+pretty(ref)};
+}
+function destroy(){Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}});charts={};}
+
+function kpiShell(label){return`<div class="card kpi"><div class="label">${label}</div>
+  <div class="val sk">000</div><div class="sub2 sk">loading</div><span class="delta idle">0</span></div>`;}
+function renderShells(){
+  document.getElementById('kpis').innerHTML=
+    ['Total revenue','Orders','Blended AOV','Web revenue','POS revenue','OMS revenue'].map(kpiShell).join('');
+  document.getElementById('insights').innerHTML='<div class="loadingline">Crunching the numbers…</div>';
+  document.querySelector('#prodTable tbody').innerHTML='';
+}
+function fillKpi(i,val,sub,delta){
+  const c=document.querySelectorAll('#kpis .card')[i];if(!c)return;
+  c.querySelector('.val').classList.remove('sk');c.querySelector('.val').textContent=val;
+  c.querySelector('.sub2').classList.remove('sk');c.querySelector('.sub2').textContent=sub;
+  const d=c.querySelector('.delta');d.className='delta '+dcls(delta);d.textContent=dstr(delta);
+}
+
+const chanRow=(loc,rx)=>loc.rows.find(r=>rx.test(r.order_location))||{value:0,order_count:0};
+function renderKPIs(daily,loc,prev){
+  const rC=daily.totals.value,oC=daily.totals.order_count,aC=oC?rC/oC:0;
+  const rP=prev.totals.value,oP=prev.totals.order_count,aP=oP?rP/oP:0;
+  const webC=chanRow(loc,/web/i),posC=chanRow(loc,/pos/i),omsC=chanRow(loc,/oms/i);
+  const webP=chanRow(prev,/web/i),posP=chanRow(prev,/pos/i),omsP=chanRow(prev,/oms/i);
+  fillKpi(0,money(rC),NUM.format(oC)+' orders · all channels',pct(rC,rP));
+  fillKpi(1,NUM.format(oC),'Web · POS · OMS combined',pct(oC,oP));
+  fillKpi(2,'£'+NUM.format(Math.round(aC)),'Blended AOV',pct(aC,aP));
+  fillKpi(3,money(webC.value),NUM.format(webC.order_count)+' web orders',pct(webC.value,webP.value));
+  fillKpi(4,money(posC.value),NUM.format(posC.order_count)+' POS orders',pct(posC.value,posP.value));
+  fillKpi(5,money(omsC.value),NUM.format(omsC.order_count)+' OMS orders',pct(omsC.value,omsP.value));
+}
+
+function renderTrend(from,to){
+  const dates=[];for(let d=from;d<=to;d=isoAdd(d,1))dates.push(d);
+  const locs=[...new Set(BASE.locDaily.filter(r=>inRange(r.period,from,to)).map(r=>r.order_location))].sort();
+  const locDay={};
+  BASE.locDaily.forEach(r=>{
+    if(!inRange(r.period,from,to))return;
+    if(!locDay[r.order_location])locDay[r.order_location]={};
+    locDay[r.order_location][r.period]=(locDay[r.order_location][r.period]||0)+r.value;
+  });
+  const datasets=locs.map((loc,i)=>({
+    type:'bar',label:loc,
+    data:dates.map(d=>locDay[loc]?.[d]||0),
+    backgroundColor:CHAN_COLS[i%CHAN_COLS.length],borderRadius:2,stack:'rev'
+  }));
+  charts.trend=new Chart(document.getElementById('trend'),{
+    data:{labels:dates.map(d=>{const p=d.split('-');return(+p[2])+'/'+(+p[1]);}),datasets},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:10}},
+        tooltip:{callbacks:{label:c=>c.dataset.label+': '+GBP0.format(c.parsed.y)}}},
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:9},autoSkip:true,maxRotation:0,maxTicksLimit:12}},
+        y:{stacked:true,grid:{color:'#eef0f1'},ticks:{callback:v=>'£'+(v>=1000?(v/1000).toFixed(0)+'k':v),font:{size:9.5}}}
+      }
+    }
+  });
+}
+function renderMix(loc){
+  const lr=loc.rows,ltot=loc.totals.value;
+  charts.mix=new Chart(document.getElementById('mix'),{type:'doughnut',
+    data:{labels:lr.map(r=>r.order_location),datasets:[{data:lr.map(r=>r.value),
+      backgroundColor:CHAN_COLS.slice(0,lr.length),borderColor:'#fff',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:11}},
+        tooltip:{callbacks:{label:c=>c.label+': '+GBP0.format(c.parsed)+' ('+(c.parsed/ltot*100).toFixed(0)+'%)'}}}}});
+}
+function renderCats(cats){
+  const cr=cats.rows;
+  charts.cats=new Chart(document.getElementById('cats'),{type:'bar',
+    data:{labels:cr.map(r=>r.product_type_title),datasets:[{data:cr.map(r=>r.value),backgroundColor:'#16a6c9',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>GBP0.format(c.parsed.x)}}},
+      scales:{x:{grid:{color:'#eef0f1'},ticks:{callback:v=>'£'+(v/1e6).toFixed(1)+'M',font:{size:9.5}}},
+        y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+}
+function renderProds(prods,w){
+  const pr=prods.rows,maxP=Math.max(...pr.map(r=>r.value));
+  document.querySelector('#prodTable tbody').innerHTML=pr.map(r=>`<tr class="clk" data-p="${(r.product_title||'').replace(/"/g,'&quot;')}">
+    <td class="name">${r.product_title}</td><td>${NUM.format(r.qty)}</td>
+    <td>${GBP0.format(r.value)}<span class="bar2" style="width:${(r.value/maxP*44).toFixed(0)}px"></span></td></tr>`).join('');
+  document.querySelectorAll('#prodTable tbody tr').forEach(tr=>tr.onclick=()=>
+    ask('In the loaf sales data for '+w.label+' 2026, "'+tr.dataset.p+'" is a top seller. Break it down by channel (Web/POS/OMS) and compare with the prior period.'));
+}
+function insightCard(tag,html){return`<div class="insight"><div class="ic">${tag}</div><p>${html}</p>
+  <button class="explore">Explore →</button></div>`;}
+function renderInsights(w,D){
+  const loc=D.loc,prev=D.prev;
+  const webC=chanRow(loc,/web/i),posC=chanRow(loc,/pos/i),omsC=chanRow(loc,/oms/i);
+  const webP=chanRow(prev,/web/i),posP=chanRow(prev,/pos/i);
+  const webD=pct(webC.value,webP.value),posD=pct(posC.value,posP.value);
+  const webAov=webC.order_count?webC.value/webC.order_count:0;
+  const posAov=posC.order_count?posC.value/posC.order_count:0;
+  const cr=D.cats.rows,catTot=cr.reduce((a,b)=>a+b.value,0);
+  const sofas=cr.find(r=>/sofa/i.test(r.product_type_title));
+  const top=D.prods.rows[0]||{product_title:'—',value:0,qty:0};
+  const movers=loc.rows.map(r=>{const p=prev.rows.find(x=>x.order_location===r.order_location)||{value:0};return{...r,d:pct(r.value,p.value)};}).sort((a,b)=>b.d-a.d);
+  const fastest=movers[0]||{order_location:'—',d:0};
+  const cards=[
+    insightCard('Channel momentum',`<b>${fastest.order_location}</b> is the fastest-growing channel at <b>${fastest.d>=0?'▲':'▼'} ${Math.abs(fastest.d).toFixed(0)}%</b> vs prior ${N} days. Web is ${webD>=0?'up':'down'} ${Math.abs(webD).toFixed(0)}%, POS ${posD>=0?'up':'down'} ${Math.abs(posD).toFixed(0)}%.`),
+    insightCard('AOV gap',`<b>POS AOV ${posAov>webAov?'leads':'trails'} web</b> — ${GBP0.format(posAov)} in-store vs ${GBP0.format(webAov)} online. Showrooms are ${posAov>webAov?'driving bigger baskets':'running lighter than web'}.`),
+    insightCard('Category concentration',`<b>Sofas</b> drive <b>${sofas?(sofas.value/catTot*100).toFixed(0):'-'}%</b> of category revenue${sofas?' ('+GBP0.format(sofas.value)+')':''} — the rest of the range is the diversification question.`),
+    insightCard('Top seller',`<b>${top.product_title}</b> led this window at ${GBP0.format(top.value)} across ${NUM.format(top.qty)} units — ${(top.value/D.daily.totals.value*100).toFixed(1)}% of total revenue.`)
+  ];
+  const prompts=[
+    'Break down Loaf sales by channel (Web/POS/OMS) for '+w.label+' 2026 — which grew fastest vs prior period and why?',
+    'Compare Loaf Web vs POS average order value and basket composition for '+w.label+' 2026. What explains the AOV gap?',
+    'How concentrated is Loaf revenue in Sofas vs other categories for '+w.label+' 2026, and which non-sofa categories are growing fastest?',
+    'Analyse "'+top.product_title+'" as the top seller for '+w.label+' 2026 — channel split, trend vs prior, and whether it is outpacing or slowing the overall revenue line.'
+  ];
+  document.getElementById('insights').innerHTML=cards.join('');
+  document.querySelectorAll('#insights .explore').forEach((b,i)=>b.onclick=()=>ask(prompts[i]));
+}
+
+function loadAll(){
+  const w=win(),my=++runId;
+  document.getElementById('window-label').textContent=w.label+' 2026  ·  vs prior '+N+' days';
+  destroy();renderShells();
+  const S=CFG.T_SALES;
+  const live=fn=>(...a)=>{if(my===runId)try{fn(...a);}catch(e){console.error(e);}};
+  let daily,loc,prev;
+  try{
+    daily=sliceDaily(w.cS,w.cE);loc=sliceLoc(w.cS,w.cE);prev=sliceLoc(w.pS,w.pE);
+    renderKPIs(daily,loc,prev);
+    renderTrend(w.cS,w.cE);
+    renderMix(loc);
+  }catch(e){showErr(e.message||String(e));}
+  const sFrom=w.cS,sTo=isoAdd(w.cE,1);
+  const pCats=mcp(S,{dataset:'product_type_sales',date_from:sFrom,date_to:sTo,group_by:['product_type_title'],metrics:['qty','value'],product_type_level:'tier_2',sort:[{field:'value',direction:'DESC'}],limit:8});
+  const pProds=mcp(S,{dataset:'product_sales',date_from:sFrom,date_to:sTo,group_by:['product_title'],metrics:['qty','value'],sort:[{field:'value',direction:'DESC'}],limit:10});
+  pCats.then(live(renderCats)).catch(()=>{});
+  pProds.then(live(r=>renderProds(r,w))).catch(()=>{});
+  Promise.all([pCats,pProds]).then(live(([cats,prods])=>renderInsights(w,{daily,loc,prev,cats,prods}))).catch(()=>{});
+}
+function setTabs(){
+  document.querySelectorAll('#tabs .tab').forEach(t=>{
+    t.classList.toggle('on',+t.dataset.n===N);
+    t.onclick=()=>{N=+t.dataset.n;setTabs();loadAll();};
+  });
+}
+(async function(){
+  if(!window.cowork||!window.cowork.callMcpTool){showErr('connector bridge unavailable in this view.');return;}
+  setTabs();renderShells();
+  try{await loadBase();REF=detectRef();}
+  catch(e){showErr(e.message||String(e));REF=isoAdd(TODAY,-1);}
+  loadAll();
+})();
+</script>
+</body>
+</html>

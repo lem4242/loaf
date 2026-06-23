@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "d3r-design": {
+      "type": "http",
+      "url": "https://ob.vivelia.co/mcp-connect/default-d3r-design-717d9c7cbcswg"
+    }
+  }
+}

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Loaf GrowthBook Dashboard",
+  "schemaVersion": 1,
+  "description": "Loaf GrowthBook Pulse — snapshot of feature flags, experiments, and stale flags from the loaf-composite (GrowthBook) connector. Environment filter, flag status table, running experiments, stale flag alerts.",
+  "mcpTools": [
+    "mcp__loaf-composite__growthbook_mv_get_feature_flags",
+    "mcp__loaf-composite__growthbook_mv_get_experiments",
+    "mcp__loaf-composite__growthbook_mv_list_feature_keys",
+    "mcp__loaf-composite__growthbook_mv_get_stale_feature_flags"
+  ],
+  "mcpServerNames": ["loaf-composite"]
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loaf — GrowthBook Dashboard</title>
+<style>
+  :root{color-scheme:light;
+    --bar:#0c0d0e;--bg:#ececed;--card:#fff;--ink:#1a1d1f;--muted:#6c7176;--line:#e3e4e7;
+    --gb:#7b5ea7;--gb-d:#634a88;--gb-bg:#f3f0f8;
+    --pos:#1f9d57;--posbg:#e3f5ea;--neg:#d8443a;--negbg:#fceae8;--warn:#b45309;--warnbg:#fef3c7;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);--r:14px;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.45}
+  .bar{background:var(--bar);color:#fff;padding:11px 20px;display:flex;align-items:center;
+    justify-content:space-between;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+  .bar .l{display:flex;align-items:center;gap:11px}
+  .mark{width:30px;height:30px;border-radius:8px;background:var(--gb);display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:11px;letter-spacing:-.3px;color:#fff}
+  .bar h1{font-size:15.5px;margin:0;font-weight:650;letter-spacing:-.2px}
+  .bar .meta{font-size:11.5px;color:#a9adb2}
+  .env-wrap{display:flex;align-items:center;gap:8px}
+  .env-label{font-size:11.5px;color:#a9adb2}
+  .env-select{background:#1b1d1f;border:1px solid #3a3d40;color:#c7cbcf;font-size:12.5px;font-weight:600;
+    padding:5px 28px 5px 12px;border-radius:18px;cursor:pointer;outline:none;appearance:none;
+    -webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a9adb2'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center}
+  .env-select option{background:#1b1d1f;color:#fff}
+  .stale-badge{background:#fde68a;color:var(--warn);font-size:11px;font-weight:700;
+    padding:2px 8px;border-radius:20px;margin-left:8px;display:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:20px 20px 60px}
+  h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
+    font-weight:700;margin:26px 2px 11px}
+  .grid{display:grid;gap:14px}
+  .kpis{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:540px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px;box-shadow:var(--shadow)}
+  .kpi .label{font-size:11px;color:var(--muted);font-weight:600}
+  .kpi .val{font-size:28px;font-weight:750;margin:8px 0 2px;letter-spacing:-.6px;color:var(--gb);min-height:34px}
+  .kpi .sub2{font-size:11px;color:var(--muted);min-height:14px}
+  .kpi.warn .val{color:var(--warn)}
+  .kpi.ok .val{color:var(--pos)}
+  .kpi.loading .val,.kpi.loading .sub2{color:transparent;background:linear-gradient(90deg,#ececec,#f6f6f6,#ececec);
+    background-size:200% 100%;animation:sh 1.1s infinite;border-radius:6px}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .row2{grid-template-columns:1fr 1fr}
+  @media(max-width:860px){.row2{grid-template-columns:1fr}}
+  .card h3{margin:0 0 1px;font-size:14px;font-weight:700}
+  .card .cap{font-size:11.5px;color:var(--muted);margin:0 0 12px}
+  .loadingline{font-size:12px;color:var(--muted);padding:14px 2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:600}
+  td.right,th.right{text-align:right}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.clk{cursor:pointer;transition:background .12s}
+  tbody tr.clk:hover{background:#f7f4fb}
+  td.key{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;font-weight:600;
+    max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  td.name{font-weight:600;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pill{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;
+    padding:2px 8px;border-radius:20px;margin:1px;white-space:nowrap}
+  .pill.on{color:var(--pos);background:var(--posbg)}
+  .pill.off{color:var(--muted);background:#f0f1f2}
+  .pill.run{color:var(--gb-d);background:var(--gb-bg)}
+  .pill.draft{color:var(--warn);background:var(--warnbg)}
+  .pill.stop{color:var(--muted);background:#f0f1f2}
+  .pill.stale{color:var(--warn);background:var(--warnbg)}
+  .pill.arch{color:#9aa0a6;background:#f4f5f6;font-style:italic}
+  .ins{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:860px){.ins{grid-template-columns:1fr}}
+  .insight{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gb);
+    border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+  .insight.warn-card{border-left-color:var(--warn)}
+  .insight .ic{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gb-d)}
+  .insight.warn-card .ic{color:var(--warn)}
+  .insight p{margin:7px 0 11px;font-size:13.5px;color:#373b3e}
+  .insight p b{color:var(--ink)}
+  .explore{border:1px solid var(--gb);background:#fff;color:var(--gb-d);font-weight:650;font-size:12px;
+    padding:5px 13px;border-radius:20px;cursor:pointer;transition:.13s}
+  .explore:hover{background:var(--gb);color:#fff}
+  .stale-box{background:var(--warnbg);border:1px solid #fde68a;border-left:3px solid var(--warn);
+    border-radius:var(--r);padding:14px 16px;margin-top:6px}
+  .stale-box h4{margin:0 0 10px;font-size:12.5px;font-weight:700;color:var(--warn)}
+  .stale-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:10px}
+  .stale-item{background:#fff;border:1px solid #fde68a;border-radius:8px;padding:8px 11px}
+  .stale-item .sk{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;font-weight:700;color:var(--warn)}
+  .stale-item .sr{font-size:11px;color:#92400e;margin-top:2px}
+  .stale-checking{font-size:11.5px;color:var(--muted);font-style:italic;padding:6px 0}
+  .note{background:#fbfbfc;border:1px solid var(--line);border-left:3px solid #c9cdd2;
+    border-radius:10px;padding:10px 13px;font-size:11.5px;color:#6b7177;margin-top:16px}
+  .err{background:var(--negbg);border:1px solid #f3c9c4;color:#a8392d;border-radius:10px;padding:10px 13px;
+    font-size:12px;margin-top:12px;display:none}
+  .empty{font-size:12px;color:var(--muted);padding:14px 6px;font-style:italic}
+  #search-row{display:flex;gap:8px;margin-bottom:10px}
+  #flag-search{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 11px;
+    font-size:13px;outline:none;font-family:inherit}
+  #flag-search:focus{border-color:var(--gb)}
+  .show-arch{border:1px solid var(--line);background:#fff;color:var(--muted);font-size:12px;
+    font-weight:600;padding:6px 13px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .show-arch.on{border-color:var(--gb);color:var(--gb-d)}
+  footer{margin-top:22px;font-size:11px;color:var(--muted);text-align:center;line-height:1.6}
+  #stale-section{display:none}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="l">
+      <div class="mark">GB</div>
+      <div>
+        <h1>Loaf — GrowthBook Dashboard</h1>
+        <div class="meta" id="meta-label">Loading…</div>
+      </div>
+    </div>
+    <div class="env-wrap">
+      <span class="env-label">Environment</span>
+      <select class="env-select" id="envSelect">
+        <option value="all">All</option>
+        <option value="production" selected>Production</option>
+        <option value="staging">Staging</option>
+      </select>
+      <span class="stale-badge" id="stale-badge">? stale</span>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="err" class="err"></div>
+
+    <h2>Workspace snapshot</h2>
+    <div class="grid kpis" id="kpis">
+      <div class="card kpi loading"><div class="label">Active flags</div><div class="val">000</div><div class="sub2">loading</div></div>
+      <div class="card kpi ok loading"><div class="label">Enabled in env</div><div class="val">000</div><div class="sub2">loading</div></div>
+      <div class="card kpi loading"><div class="label">Disabled</div><div class="val">000</div><div class="sub2">loading</div></div>
+      <div class="card kpi warn loading"><div class="label">Stale flags</div><div class="val">—</div><div class="sub2">checking…</div></div>
+      <div class="card kpi loading"><div class="label">Running experiments</div><div class="val">000</div><div class="sub2">loading</div></div>
+    </div>
+
+    <div id="stale-section">
+      <h2>⚠ Stale flags — ready for cleanup</h2>
+      <div class="stale-box">
+        <h4 id="stale-title">Flags that have been folded (always resolve to a constant value)</h4>
+        <div class="stale-grid" id="stale-grid"></div>
+        <button class="explore" id="stale-explore-btn">Ask Claude to plan the cleanup →</button>
+      </div>
+    </div>
+
+    <h2>What stands out</h2>
+    <div class="ins" id="insights"><div class="loadingline">Fetching workspace state…</div></div>
+
+    <h2>Feature flags</h2>
+    <div class="card">
+      <div id="search-row">
+        <input id="flag-search" type="search" placeholder="Filter flags…" autocomplete="off">
+        <button class="show-arch" id="arch-toggle">Show archived</button>
+      </div>
+      <p class="cap" id="flags-cap">Loading…</p>
+      <table id="flagsTable">
+        <thead><tr>
+          <th>Flag key</th>
+          <th>Production</th>
+          <th>Staging</th>
+          <th class="right">Stale</th>
+        </tr></thead>
+        <tbody><tr><td colspan="4" class="empty">Loading flags…</td></tr></tbody>
+      </table>
+    </div>
+
+    <h2>Experiments</h2>
+    <div class="grid row2">
+      <div class="card">
+        <h3>Running</h3>
+        <p class="cap">Live experiments right now</p>
+        <table id="runTable">
+          <thead><tr><th>Name</th><th>Variations</th></tr></thead>
+          <tbody><tr><td colspan="2" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Drafts</h3>
+        <p class="cap">Queued — not yet launched</p>
+        <table id="draftTable">
+          <thead><tr><th>Name</th><th>Goals</th></tr></thead>
+          <tbody><tr><td colspan="2" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="note"><b>Note.</b> Data is fetched live on open from the <b>loaf-composite</b> (GrowthBook MV) connector. The environment filter is client-side — all flags load once. Stale flag check runs asynchronously after initial render and updates the badge and section when complete.</div>
+    <footer>Loaf GrowthBook Dashboard · live snapshot · <span id="flag-total-footer">—</span> flags · <span id="exp-total-footer">—</span> experiments</footer>
+  </div>
+
+<script>
+const CFG={
+  T_FLAGS:"mcp__loaf-composite__growthbook_mv_get_feature_flags",
+  T_EXPS:"mcp__loaf-composite__growthbook_mv_get_experiments",
+  T_KEYS:"mcp__loaf-composite__growthbook_mv_list_feature_keys",
+  T_STALE:"mcp__loaf-composite__growthbook_mv_get_stale_feature_flags"
+};
+
+const ask=t=>{if(window.cowork&&window.cowork.sendPrompt)window.cowork.sendPrompt(t);};
+const showErr=m=>{const e=document.getElementById('err');e.style.display='block';e.textContent='Error loading data: '+m;};
+const trunc=(s,n)=>s&&s.length>n?s.slice(0,n-1)+'…':s||'—';
+
+// MCP wrapper — returns text as-is when JSON parse fails (GrowthBook tools return text)
+const callCache=new Map();
+async function mcp(name,args){
+  const key=name+'|'+JSON.stringify(args);
+  if(callCache.has(key))return callCache.get(key);
+  const p=(async()=>{
+    const r=await window.cowork.callMcpTool(name,args);
+    if(r.isError)throw new Error((r.content&&r.content[0]&&r.content[0].text)||'tool error');
+    if(r.structuredContent!=null)return r.structuredContent;
+    const text=(r.content&&r.content[0]&&r.content[0].text)||'';
+    try{return JSON.parse(text);}catch(_){return text;}
+  })();
+  callCache.set(key,p);
+  try{return await p;}catch(e){callCache.delete(key);throw e;}
+}
+
+/* ---- Text parsers ---- */
+
+function parseFlagsText(text){
+  if(!text||typeof text!=='string')return{flags:[],total:0};
+  const cm=text.match(/\*\*(\d+) feature flag/);
+  const total=cm?+cm[1]:0;
+  const flags=[];
+  // Split on "- **key**" lines (blank line between items, split on the bullet)
+  const parts=('\n'+text).split(/\n- \*\*/);
+  parts.slice(1).forEach(block=>{
+    // "key** (type) — default: `val` [ARCHIVED]"
+    const hm=block.match(/^([^*\n]+)\*+\s*\((\w+)\)[^`]*`([^`]*)` ?(\[ARCHIVED\])?/);
+    if(!hm)return;
+    const key=hm[1].trim();
+    const type=hm[2];
+    const archived=!!hm[4];
+    // Environments line
+    const em=block.match(/Environments:\s*(.+)/);
+    const production=em?/production:\s*ON/i.test(em[1]):null;
+    const staging=em?/staging:\s*ON/i.test(em[1]):null;
+    flags.push({key,type,archived,production,staging});
+  });
+  return{flags,total};
+}
+
+function parseExperimentsText(text){
+  if(!text||typeof text!=='string')return[];
+  const exps=[];
+  const parts=('\n'+text).split(/\n- \*\*/);
+  parts.slice(1).forEach(block=>{
+    // "Name** (id: `exp_xxx`, status: running)"
+    const hm=block.match(/^([^*\n]+)\*+\s*\(id:\s*`([^`]+)`,\s*status:\s*(\w+)\)/);
+    if(!hm)return;
+    const name=hm[1].trim();
+    const id=hm[2];
+    const status=hm[3];
+    const vm=block.match(/Variations:\s*([^|]+)/);
+    const variations=vm?vm[1].trim():'';
+    const gm=block.match(/Goals:\s*(\d+)/);
+    const goalCount=gm?+gm[1]:0;
+    exps.push({id,name,status,variations,goalCount});
+  });
+  return exps;
+}
+
+function parseKeysText(text){
+  if(!text||typeof text!=='string')return[];
+  // All backtick-wrapped values that look like flag keys (not exp_ ids)
+  return[...text.matchAll(/`([^`]+)`/g)].map(m=>m[1]).filter(k=>!k.startsWith('exp_'));
+}
+
+function parseStaleText(text){
+  if(!text||typeof text!=='string')return[];
+  // Match "- **`key`**: STALE ..." vs "- **`key`**: NOT STALE"
+  const stale=[];
+  for(const m of text.matchAll(/- \*\*`([^`]+)`\*\*:\s*(NOT STALE|STALE[^N])/g)){
+    if(m[2].startsWith('STALE'))stale.push(m[1]);
+  }
+  return stale;
+}
+
+// Extract replacement value from stale text for a given key
+function staleReplacement(text,key){
+  const re=new RegExp('-\\s\\*\\*`'+key.replace(/[-[\]{}()*+?.,\\^$|#\s]/g,'\\$&')+'`\\*\\*.*?replace with:\\s*`([^`]*)`','s');
+  const m=text.match(re);
+  return m?m[1]:null;
+}
+
+/* ---- State ---- */
+let DATA=null; // {flags, total, experiments, staleKeys, staleText}
+let ENV='production';
+let showArchived=false;
+let filterText='';
+
+/* ---- KPIs ---- */
+function fillKpi(i,val,sub,cls){
+  const c=document.querySelectorAll('#kpis .card')[i];if(!c)return;
+  c.className='card kpi'+(cls?' '+cls:'');
+  c.querySelector('.val').textContent=val;
+  c.querySelector('.sub2').textContent=sub;
+}
+
+/* ---- Render ---- */
+function envOn(flag,env){
+  if(env==='all')return flag.production||flag.staging;
+  if(env==='production')return flag.production;
+  if(env==='staging')return flag.staging;
+  return null;
+}
+function envOff(flag,env){
+  if(env==='all')return!flag.production&&!flag.staging;
+  if(env==='production')return flag.production===false;
+  if(env==='staging')return flag.staging===false;
+  return null;
+}
+
+function render(){
+  const {flags,total,experiments,staleKeys,staleText}=DATA;
+  const env=ENV;
+  const active=flags.filter(f=>!f.archived);
+  const enabledInEnv=active.filter(f=>envOn(f,env));
+  const disabledInEnv=active.filter(f=>envOff(f,env));
+  const running=experiments.filter(e=>e.status==='running');
+  const draft=experiments.filter(e=>e.status==='draft');
+
+  // KPIs
+  fillKpi(0,String(active.length),'flags ('+flags.filter(f=>f.archived).length+' archived)','');
+  fillKpi(1,String(enabledInEnv.length),'on in '+(env==='all'?'any env':env),'ok');
+  fillKpi(2,String(disabledInEnv.length),'off in '+(env==='all'?'any env':env),'');
+  if(staleKeys){
+    fillKpi(3,String(staleKeys.length),staleKeys.length?'need cleanup':'looking clean',staleKeys.length?'warn':'ok');
+    const badge=document.getElementById('stale-badge');
+    badge.textContent=staleKeys.length+' stale';
+    badge.style.display=staleKeys.length?'inline':'none';
+  }
+  fillKpi(4,String(running.length),'live · '+draft.length+' draft'+(draft.length!==1?'s':''),'');
+
+  // Stale section
+  if(staleKeys&&staleKeys.length){
+    document.getElementById('stale-section').style.display='block';
+    document.getElementById('stale-title').textContent=
+      staleKeys.length+' flag'+(staleKeys.length!==1?'s':'')+' folded — always resolve to a constant value';
+    document.getElementById('stale-grid').innerHTML=staleKeys.map(k=>{
+      const rep=staleText?staleReplacement(staleText,k):null;
+      return`<div class="stale-item"><div class="sk">${k}</div>${rep!=null?`<div class="sr">→ always <code>${rep}</code></div>`:''}</div>`;
+    }).join('');
+    document.getElementById('stale-explore-btn').onclick=()=>
+      ask('Plan the cleanup for these stale Loaf GrowthBook feature flags: '+staleKeys.slice(0,10).join(', ')+
+        (staleKeys.length>10?' and '+(staleKeys.length-10)+' more.':'.'));
+  } else if(staleKeys){
+    document.getElementById('stale-section').style.display='none';
+  }
+
+  // Flags table
+  const flagSearch=filterText.toLowerCase();
+  let visible=flags.filter(f=>{
+    if(!showArchived&&f.archived)return false;
+    if(flagSearch&&!f.key.toLowerCase().includes(flagSearch))return false;
+    return true;
+  });
+  document.getElementById('flags-cap').textContent=
+    visible.length+' shown of '+flags.length+' total'+
+    (env!=='all'?' · '+env+' environment':'');
+  const staleSet=new Set(staleKeys||[]);
+  document.querySelector('#flagsTable tbody').innerHTML=visible.length
+    ?visible.map(f=>{
+      const onProd=f.production;const onStage=f.staging;
+      const isStale=staleSet.has(f.key);
+      return`<tr class="clk" data-k="${f.key}">
+        <td class="key">${f.key}${f.archived?'<span class="pill arch" style="margin-left:5px">archived</span>':''}</td>
+        <td>${onProd===null?'<span class="pill off">—</span>':onProd?'<span class="pill on">ON</span>':'<span class="pill off">OFF</span>'}</td>
+        <td>${onStage===null?'<span class="pill off">—</span>':onStage?'<span class="pill on">ON</span>':'<span class="pill off">OFF</span>'}</td>
+        <td class="right">${isStale?'<span class="pill stale">stale</span>':staleKeys?'<span style="color:var(--muted);font-size:11px">clean</span>':'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
+      </tr>`;
+    }).join('')
+    :'<tr><td colspan="4" class="empty">No flags match</td></tr>';
+  document.querySelectorAll('#flagsTable tbody tr.clk').forEach(tr=>tr.onclick=()=>
+    ask('Tell me about the Loaf GrowthBook feature flag "'+tr.dataset.k+'" — what it controls, its current state in production and staging, any linked experiments, and whether it is safe to remove or archive.'));
+
+  // Running experiments table
+  document.querySelector('#runTable tbody').innerHTML=running.length
+    ?running.map(e=>`<tr class="clk" data-n="${e.name.replace(/"/g,'&quot;')}">
+        <td class="name" title="${e.name}">${trunc(e.name,40)}</td>
+        <td style="font-size:11.5px;color:var(--muted)">${trunc(e.variations,30)}</td></tr>`).join('')
+    :'<tr><td colspan="2" class="empty">No running experiments</td></tr>';
+  document.querySelectorAll('#runTable tbody tr.clk').forEach(tr=>tr.onclick=()=>
+    ask('Tell me about the Loaf GrowthBook experiment "'+tr.dataset.n+'" — hypothesis, current phase, which metric it\'s testing, and any early read on results.'));
+
+  // Drafts table
+  document.querySelector('#draftTable tbody').innerHTML=draft.length
+    ?draft.map(e=>`<tr class="clk" data-n="${e.name.replace(/"/g,'&quot;')}">
+        <td class="name">${trunc(e.name,40)}</td>
+        <td class="right" style="font-size:11.5px;color:var(--muted)">${e.goalCount||'—'} metric${e.goalCount!==1?'s':''}</td></tr>`).join('')
+    :'<tr><td colspan="2" class="empty">No draft experiments</td></tr>';
+  document.querySelectorAll('#draftTable tbody tr.clk').forEach(tr=>tr.onclick=()=>
+    ask('Tell me about the Loaf GrowthBook draft experiment "'+tr.dataset.n+'" — what is it testing, is it ready to launch, and what should be confirmed before going live?'));
+
+  // Insights
+  const flagsNoDocs=active.filter(f=>f.type==='boolean'&&!f.archived).length; // placeholder
+  const cards=[
+    staleKeys&&staleKeys.length
+      ?`<div class="insight warn-card"><div class="ic">Stale flags</div>
+          <p><b>${staleKeys.length} flag${staleKeys.length!==1?'s are':' is'} stale</b> — they always resolve to a constant and are safe to remove from the codebase. See the stale section above for the full list.</p>
+          <button class="explore" data-i="0">Plan the cleanup →</button></div>`
+      :`<div class="insight"><div class="ic">Flag hygiene</div>
+          <p>${staleKeys?'<b>No stale flags</b> — the workspace looks clean. ':'Stale flag check loading… '}${active.length} active flags across production and staging.</p>
+          <button class="explore" data-i="0">Review flag inventory →</button></div>`,
+    `<div class="insight"><div class="ic">Live experiments</div>
+      <p><b>${running.length} experiment${running.length!==1?'s are':' is'} running</b> right now${draft.length?' with '+draft.length+' draft'+( draft.length!==1?'s':''):''} in the pipeline. ${running.length?'Click any row in the Experiments table to dig into results.':'No active tests.'}</p>
+      <button class="explore" data-i="1">Summarise experiments →</button></div>`,
+    `<div class="insight"><div class="ic">Production surface</div>
+      <p><b>${enabledInEnv.length} flag${enabledInEnv.length!==1?'s are':' is'} on in ${env==='all'?'any environment':env}</b> out of ${active.length} active — ${active.length?((enabledInEnv.length/active.length)*100).toFixed(0)+'%':'-'} of the flag inventory is live to users.</p>
+      <button class="explore" data-i="2">Review high-impact flags →</button></div>`,
+    `<div class="insight"><div class="ic">Flag inventory</div>
+      <p><b>${active.length} active flags</b>, ${flags.filter(f=>f.archived).length} archived. ${flags.filter(f=>f.production&&f.staging).length} are on in both environments; ${flags.filter(f=>f.production&&!f.staging).length} are prod-only.</p>
+      <button class="explore" data-i="3">Audit flag consistency →</button></div>`
+  ];
+  const prompts=[
+    staleKeys&&staleKeys.length
+      ?'Plan the cleanup for these stale Loaf GrowthBook feature flags: '+staleKeys.join(', ')+'. For each one, explain what value to hard-code and how to safely remove the flag check.'
+      :'Review the Loaf GrowthBook feature flag inventory for hygiene issues — flags that could be consolidated, renamed for clarity, or are candidates for future deprecation.',
+    'Summarise the '+running.length+' running Loaf GrowthBook experiments — what each is testing, how long they have been running, and whether any have enough data to call a winner.',
+    'Which of the '+enabledInEnv.length+' flags enabled in Loaf '+env+' carry the most risk if accidentally toggled? Identify high-impact flags and recommend a review cadence.',
+    'Audit the Loaf GrowthBook flag inventory: which flags are production-only (not in staging), which are in both, and are there any inconsistencies that should be resolved?'
+  ];
+  document.getElementById('insights').innerHTML=cards.join('');
+  document.querySelectorAll('#insights .explore').forEach(b=>b.onclick=()=>ask(prompts[+b.dataset.i]));
+
+  // Footer
+  document.getElementById('meta-label').textContent=
+    (env==='all'?'All environments':env)+' · '+flags.length+' flags · '+experiments.length+' experiments';
+  document.getElementById('flag-total-footer').textContent=flags.length;
+  document.getElementById('exp-total-footer').textContent=experiments.length;
+}
+
+/* ---- Async stale check (runs after initial render, batched 50 at a time) ---- */
+async function loadStaleAsync(){
+  try{
+    const keysRaw=await mcp(CFG.T_KEYS,{});
+    const allKeys=parseKeysText(String(keysRaw));
+    if(!allKeys.length){DATA.staleKeys=[];DATA.staleText='';render();return;}
+    // Batch 50 at a time to stay within any tool limits
+    const BATCH=50;
+    let staleKeys=[],staleText='';
+    for(let i=0;i<allKeys.length;i+=BATCH){
+      const batch=allKeys.slice(i,i+BATCH);
+      const raw=await mcp(CFG.T_STALE,{featureIds:batch});
+      const t=String(raw);
+      staleText+=t+'\n';
+      staleKeys.push(...parseStaleText(t));
+    }
+    DATA.staleKeys=staleKeys;DATA.staleText=staleText;
+    render();
+  }catch(e){
+    console.warn('Stale check failed:',e);
+    DATA.staleKeys=[];DATA.staleText='';
+    fillKpi(3,'?','check failed','warn');
+  }
+}
+
+/* ---- Wire up search + archive toggle ---- */
+document.getElementById('flag-search').addEventListener('input',e=>{
+  filterText=e.target.value;if(DATA)render();
+});
+document.getElementById('arch-toggle').addEventListener('click',function(){
+  showArchived=!showArchived;
+  this.classList.toggle('on',showArchived);
+  this.textContent=showArchived?'Hide archived':'Show archived';
+  if(DATA)render();
+});
+document.getElementById('envSelect').addEventListener('change',e=>{
+  ENV=e.target.value;if(DATA)render();
+});
+
+/* ---- Main load ---- */
+(async function(){
+  if(!window.cowork||!window.cowork.callMcpTool){showErr('connector bridge unavailable in this view.');return;}
+  try{
+    // Parallel: flags page 1, flags page 2, experiments (most recent first)
+    const [f1,f2,expsRaw]=await Promise.all([
+      mcp(CFG.T_FLAGS,{limit:100}),
+      mcp(CFG.T_FLAGS,{limit:100,offset:100}),
+      mcp(CFG.T_EXPS,{limit:100,mostRecent:true,mode:'metadata'})
+    ]);
+    const p1=parseFlagsText(String(f1));
+    const p2=parseFlagsText(String(f2));
+    const flags=[...p1.flags,...p2.flags];
+    const total=p1.total||flags.length;
+    const experiments=parseExperimentsText(String(expsRaw));
+    DATA={flags,total,experiments,staleKeys:null,staleText:null};
+    render();
+    // Stale check runs in the background — updates badge + section when done
+    loadStaleAsync();
+  }catch(e){
+    showErr(e.message||String(e));
+  }
+})();
+</script>
+</body>
+</html>

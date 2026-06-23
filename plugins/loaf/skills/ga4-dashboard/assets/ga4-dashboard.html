@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Loaf GA4 Dashboard",
+  "schemaVersion": 1,
+  "description": "Loaf GA4 Pulse — web analytics dashboard from the loaf-composite (GA4) connector. Sessions, users, engagement, transactions, revenue, conversion rate. 7/30/90-day toggle, channel breakdown, top landing pages.",
+  "mcpTools": [
+    "mcp__loaf-composite__ga4_official_run_report"
+  ],
+  "mcpServerNames": ["loaf-composite"]
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loaf — GA4 Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root{color-scheme:light;
+    --bar:#0c0d0e;--bg:#ececed;--card:#fff;--ink:#1a1d1f;--muted:#6c7176;--line:#e3e4e7;
+    --teal:#16a6c9;--teal-d:#0f8aa9;--pos:#1f9d57;--posbg:#e3f5ea;--neg:#d8443a;--negbg:#fceae8;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);--r:14px;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.45}
+  .bar{background:var(--bar);color:#fff;padding:11px 20px;display:flex;align-items:center;
+    justify-content:space-between;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+  .bar .l{display:flex;align-items:center;gap:11px}
+  .mark{width:30px;height:30px;border-radius:8px;background:#e8710a;display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:11px;letter-spacing:-.3px}
+  .bar h1{font-size:15.5px;margin:0;font-weight:650;letter-spacing:-.2px}
+  .bar .meta{font-size:11.5px;color:#a9adb2}
+  .tabs{display:flex;gap:7px;background:#1b1d1f;padding:4px;border-radius:22px}
+  .tab{border:0;background:transparent;color:#c7cbcf;font-size:12.5px;font-weight:600;
+    padding:5px 14px;border-radius:18px;cursor:pointer;transition:.15s}
+  .tab.on{background:#fff;color:var(--ink)}
+  .wrap{max-width:1140px;margin:0 auto;padding:20px 20px 60px}
+  h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
+    font-weight:700;margin:26px 2px 11px}
+  .grid{display:grid;gap:14px}
+  .kpis{grid-template-columns:repeat(6,1fr)}
+  @media(max-width:940px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:540px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px;box-shadow:var(--shadow)}
+  .kpi .label{font-size:11px;color:var(--muted);font-weight:600}
+  .kpi .val{font-size:25px;font-weight:750;margin:6px 0 1px;letter-spacing:-.6px;color:#e8710a;min-height:30px}
+  .kpi .sub2{font-size:11px;color:var(--muted);min-height:14px}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;margin-top:8px;
+    padding:2px 9px;border-radius:20px;min-height:19px}
+  .delta.up{color:var(--pos);background:var(--posbg)}
+  .delta.down{color:var(--neg);background:var(--negbg)}
+  .delta.idle{background:#f0f1f2;color:transparent;min-width:54px}
+  .sk{color:transparent!important;background:linear-gradient(90deg,#ececec,#f6f6f6,#ececec);
+    background-size:200% 100%;animation:sh 1.1s infinite;border-radius:6px}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .row2{grid-template-columns:1.55fr 1fr}
+  .row3{grid-template-columns:1fr 1fr}
+  @media(max-width:860px){.row2,.row3{grid-template-columns:1fr}}
+  .card h3{margin:0 0 1px;font-size:14px;font-weight:700}
+  .card .cap{font-size:11.5px;color:var(--muted);margin:0 0 12px}
+  .chartbox{position:relative;height:262px}.chartbox.sm{height:220px}
+  .loadingline{font-size:12px;color:var(--muted);padding:14px 2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:right;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:600}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.clk{cursor:pointer;transition:background .12s}
+  tbody tr.clk:hover{background:#fff8f5}
+  td.name{font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ins{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:860px){.ins{grid-template-columns:1fr}}
+  .insight{background:var(--card);border:1px solid var(--line);border-left:3px solid #e8710a;
+    border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+  .insight .ic{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#c45e08}
+  .insight p{margin:7px 0 11px;font-size:13.5px;color:#373b3e}
+  .insight p b{color:var(--ink)}
+  .explore{border:1px solid #e8710a;background:#fff;color:#c45e08;font-weight:650;font-size:12px;
+    padding:5px 13px;border-radius:20px;cursor:pointer;transition:.13s}
+  .explore:hover{background:#e8710a;color:#fff}
+  .legend{display:flex;gap:13px;font-size:11px;color:var(--muted);margin-bottom:6px}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:4px;vertical-align:middle}
+  .note{background:#fbfbfc;border:1px solid var(--line);border-left:3px solid #c9cdd2;
+    border-radius:10px;padding:10px 13px;font-size:11.5px;color:#6b7177;margin-top:16px}
+  .err{background:var(--negbg);border:1px solid #f3c9c4;color:#a8392d;border-radius:10px;padding:10px 13px;
+    font-size:12px;margin-top:12px;display:none}
+  footer{margin-top:22px;font-size:11px;color:var(--muted);text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="l">
+      <div class="mark">GA4</div>
+      <div>
+        <h1>Loaf — GA4 Dashboard</h1>
+        <div class="meta" id="window-label">Loading…</div>
+      </div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab" data-n="7">7 days</button>
+      <button class="tab" data-n="30">30 days</button>
+      <button class="tab" data-n="90">90 days</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="err" class="err"></div>
+
+    <h2>Key stats</h2>
+    <div class="grid kpis" id="kpis"></div>
+
+    <h2>What stands out</h2>
+    <div class="ins" id="insights"></div>
+
+    <h2>Traffic &amp; conversion trend</h2>
+    <div class="grid row2">
+      <div class="card">
+        <h3>Sessions &amp; conversion rate</h3>
+        <p class="cap">Bars = sessions · Line = conv. rate (right axis)</p>
+        <div class="legend"><span><i style="background:#e8710a"></i>Sessions</span><span><i style="background:#1a1d1f"></i>Conv. rate</span></div>
+        <div class="chartbox"><canvas id="trend"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Sessions by channel</h3>
+        <p class="cap">Share by default channel group</p>
+        <div class="chartbox"><canvas id="mix"></canvas></div>
+      </div>
+    </div>
+
+    <h2>Channels &amp; pages</h2>
+    <div class="grid row3">
+      <div class="card">
+        <h3>Top channels</h3>
+        <p class="cap">Click a row to explore in chat</p>
+        <table id="chanTable">
+          <thead><tr><th>Channel</th><th>Sessions</th><th>Share</th><th>Conv.</th><th>Revenue</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Top landing pages</h3>
+        <p class="cap">Click a row to explore in chat</p>
+        <table id="pageTable">
+          <thead><tr><th>Page</th><th>Sessions</th><th>Bounce</th><th>Txns</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="note"><b>Note.</b> GA4 <code>purchaseRevenue</code> captures web ecommerce events only — it may undercount vs the loaf connector (the revenue source of record). Use GA4 figures for trend and ratio analysis; use the loaf connector for absolute sales numbers.</div>
+    <footer>Loaf GA4 Dashboard · live from loaf-composite on open · loaf.com property 256796183</footer>
+  </div>
+
+<script>
+const CFG={
+  TODAY:"",
+  REF_DATE:"auto",
+  DEFAULT_DAYS:7,
+  LOOKBACK_DAYS:200,
+  GA4_PROPERTY:"256796183",
+  T_GA4:"mcp__loaf-composite__ga4_official_run_report"
+};
+
+// Metric indices in the daily base pull
+const I={SESS:0,USERS:1,ENG:2,TXN:3,REV:4};
+
+const GBP2=new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',minimumFractionDigits:0,maximumFractionDigits:0});
+const NUM=new Intl.NumberFormat('en-GB');
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CHAN_COLS=['#e8710a','#1a1d1f','#16a6c9','#c9a24b','#9c7bb5','#4c8a4a','#c44b8a','#4b7bc4'];
+let N=CFG.DEFAULT_DAYS,charts={},runId=0,REF=null;
+const TODAY=CFG.TODAY||new Date().toISOString().slice(0,10);
+
+const isoAdd=(d,days)=>{const t=new Date(d+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+days);return t.toISOString().slice(0,10);};
+const ga4iso=s=>s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8);
+const isoGa4=s=>s.replace(/-/g,'');
+const pretty=iso=>{const p=iso.split('-');return(+p[2])+' '+MON[(+p[1])-1];};
+const ask=t=>{if(window.cowork&&window.cowork.sendPrompt)window.cowork.sendPrompt(t);};
+const showErr=m=>{const e=document.getElementById('err');e.style.display='block';e.textContent='Could not load some data: '+m;};
+const pct=(a,b)=>b?((a/b-1)*100):0;
+const dstr=d=>(d>=0?'▲ ':'▼ ')+Math.abs(d).toFixed(1)+'%';
+const dcls=d=>d>=0?'up':'down';
+const inRange=(p,f,t)=>p>=f&&p<=t;
+const fmtSess=v=>v>=1000?(v/1000).toFixed(1)+'K':NUM.format(v);
+const fmtRev=v=>v>=1e6?'£'+(v/1e6).toFixed(2)+'M':'£'+NUM.format(Math.round(v));
+
+const callCache=new Map();
+async function mcp(name,args){
+  const key=name+'|'+JSON.stringify(args);
+  if(callCache.has(key))return callCache.get(key);
+  const p=(async()=>{
+    const r=await window.cowork.callMcpTool(name,args);
+    if(r.isError)throw new Error((r.content&&r.content[0]&&r.content[0].text)||'tool error');
+    let d=r.structuredContent;if(d==null)d=JSON.parse(r.content[0].text);return d;
+  })();
+  callCache.set(key,p);
+  try{return await p;}catch(e){callCache.delete(key);throw e;}
+}
+
+// BASE: {days: {YYYY-MM-DD: {sess,users,eng,txn,rev}}}
+let BASE=null;
+
+async function loadBase(){
+  if(BASE)return BASE;
+  const today=TODAY;
+  const from=isoAdd(today,-CFG.LOOKBACK_DAYS),to=today;
+  const raw=await mcp(CFG.T_GA4,{
+    property_id:CFG.GA4_PROPERTY,
+    date_ranges:[{start_date:from,end_date:to}],
+    dimensions:['date'],
+    metrics:['sessions','activeUsers','engagedSessions','transactions','purchaseRevenue'],
+    order_bys:[{dimension:{dimension_name:'date'},desc:false}]
+  });
+  const days={};
+  (raw.rows||[]).forEach(r=>{
+    const iso=ga4iso(r.dimensionValues[0].value);
+    days[iso]={
+      sess:+r.metricValues[I.SESS].value,
+      users:+r.metricValues[I.USERS].value,
+      eng:+r.metricValues[I.ENG].value,
+      txn:+r.metricValues[I.TXN].value,
+      rev:+r.metricValues[I.REV].value
+    };
+  });
+  BASE={days};return BASE;
+}
+
+function detectRef(){
+  if(CFG.REF_DATE&&CFG.REF_DATE!=='auto')return CFG.REF_DATE;
+  const sorted=Object.keys(BASE.days).filter(d=>BASE.days[d].sess>0).sort();
+  if(!sorted.length)return isoAdd(TODAY,-1);
+  const vals=sorted.map(d=>BASE.days[d].sess).sort((a,b)=>a-b);
+  const med=vals[Math.floor(vals.length/2)]||0;
+  for(let i=sorted.length-1;i>=0;i--){if(BASE.days[sorted[i]].sess>=med*0.5)return sorted[i];}
+  return sorted[sorted.length-1];
+}
+
+function sliceWindow(from,to){
+  let sess=0,users=0,eng=0,txn=0,rev=0;
+  const dailyRows=[];
+  for(let d=from;d<=to;d=isoAdd(d,1)){
+    const v=BASE.days[d]||{sess:0,users:0,eng:0,txn:0,rev:0};
+    sess+=v.sess;users+=v.users;eng+=v.eng;txn+=v.txn;rev+=v.rev;
+    dailyRows.push({date:d,...v});
+  }
+  return{sess,users,eng,txn,rev,dailyRows,engRate:sess?eng/sess:0,convRate:sess?txn/sess:0};
+}
+
+function win(){
+  const ref=REF,cS=isoAdd(ref,-(N-1)),cE=ref;
+  const pE=isoAdd(cS,-1),pS=isoAdd(pE,-(N-1));
+  return{cS,cE,pS,pE,label:pretty(cS)+' – '+pretty(ref)};
+}
+function destroy(){Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}});charts={};}
+
+function kpiShell(label){return`<div class="card kpi"><div class="label">${label}</div>
+  <div class="val sk">000</div><div class="sub2 sk">loading</div><span class="delta idle">0</span></div>`;}
+function renderShells(){
+  document.getElementById('kpis').innerHTML=
+    ['Sessions','Active users','Engagement rate','Transactions','Revenue (GA4)','Conv. rate'].map(kpiShell).join('');
+  document.getElementById('insights').innerHTML='<div class="loadingline">Analysing traffic…</div>';
+  document.querySelector('#chanTable tbody').innerHTML='';
+  document.querySelector('#pageTable tbody').innerHTML='';
+}
+function fillKpi(i,val,sub,delta){
+  const c=document.querySelectorAll('#kpis .card')[i];if(!c)return;
+  c.querySelector('.val').classList.remove('sk');c.querySelector('.val').textContent=val;
+  c.querySelector('.sub2').classList.remove('sk');c.querySelector('.sub2').textContent=sub;
+  const d=c.querySelector('.delta');d.className='delta '+dcls(delta);d.textContent=dstr(delta);
+}
+function renderKPIs(cur,prev){
+  fillKpi(0,fmtSess(cur.sess),'vs '+fmtSess(prev.sess)+' prior',pct(cur.sess,prev.sess));
+  fillKpi(1,fmtSess(cur.users),'unique users',pct(cur.users,prev.users));
+  fillKpi(2,(cur.engRate*100).toFixed(1)+'%','engaged / total sessions',pct(cur.engRate,prev.engRate));
+  fillKpi(3,NUM.format(cur.txn),'purchases completed',pct(cur.txn,prev.txn));
+  fillKpi(4,fmtRev(cur.rev),'GA4 ecommerce revenue',pct(cur.rev,prev.rev));
+  fillKpi(5,(cur.convRate*100).toFixed(2)+'%','transactions ÷ sessions',pct(cur.convRate,prev.convRate));
+}
+
+function renderTrend(cur){
+  const rows=cur.dailyRows;
+  const labels=rows.map(r=>{const p=r.date.split('-');return(+p[2])+'/'+(+p[1]);});
+  const sessData=rows.map(r=>r.sess);
+  const convData=rows.map(r=>r.sess?(r.txn/r.sess*100):0);
+  charts.trend=new Chart(document.getElementById('trend'),{
+    data:{labels,datasets:[
+      {type:'bar',label:'Sessions',data:sessData,backgroundColor:'#e8710a',borderRadius:3,yAxisID:'y',order:2},
+      {type:'line',label:'Conv. rate %',data:convData,borderColor:'#1a1d1f',borderWidth:1.8,pointRadius:0,tension:.35,yAxisID:'y1',order:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label==='Sessions'?'Sessions: '+NUM.format(c.parsed.y):'Conv: '+c.parsed.y.toFixed(2)+'%'}}},
+      scales:{
+        y:{position:'left',grid:{color:'#eef0f1'},ticks:{callback:v=>(v/1000)+'k',font:{size:9.5}}},
+        y1:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v.toFixed(1)+'%',font:{size:9.5}}},
+        x:{grid:{display:false},ticks:{font:{size:9},autoSkip:true,maxRotation:0,maxTicksLimit:12}}
+      }
+    }
+  });
+}
+
+function renderMix(chanData){
+  const rows=chanData.rows||[];
+  const top=rows.slice(0,6);const rest=rows.slice(6);
+  const labels=[...top.map(r=>r.dimensionValues[0].value)];
+  const vals=[...top.map(r=>+r.metricValues[0].value)];
+  if(rest.length){labels.push('Other');vals.push(rest.reduce((a,r)=>a+(+r.metricValues[0].value),0));}
+  const tot=vals.reduce((a,b)=>a+b,0)||1;
+  charts.mix=new Chart(document.getElementById('mix'),{type:'doughnut',
+    data:{labels,datasets:[{data:vals,backgroundColor:CHAN_COLS.slice(0,labels.length),borderColor:'#fff',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{position:'bottom',labels:{font:{size:10.5},boxWidth:11,padding:9}},
+        tooltip:{callbacks:{label:c=>c.label+': '+NUM.format(c.parsed)+' ('+(c.parsed/tot*100).toFixed(0)+'%)'}}}}});
+}
+
+function renderChans(chanData,w){
+  const rows=chanData.rows||[];
+  const tot=rows.reduce((a,r)=>a+(+r.metricValues[0].value),0)||1;
+  document.querySelector('#chanTable tbody').innerHTML=rows.slice(0,9).map(r=>{
+    const s=+r.metricValues[0].value,t=+r.metricValues[1].value,rv=+r.metricValues[2].value;
+    const ch=r.dimensionValues[0].value;
+    const cv=s?(t/s*100).toFixed(2)+'%':'—';
+    return`<tr class="clk" data-c="${ch}"><td class="name">${ch}</td>
+      <td>${NUM.format(s)}</td><td>${(s/tot*100).toFixed(1)}%</td><td>${cv}</td>
+      <td>${rv?fmtRev(rv):'—'}</td></tr>`;}).join('');
+  document.querySelectorAll('#chanTable tbody tr').forEach(tr=>tr.onclick=()=>
+    ask('For loaf.com (GA4) over '+w.label+' 2026, dig into the "'+tr.dataset.c+'" channel: sessions trend vs prior, top landing pages, conversion rate, and how to improve it.'));
+}
+
+function renderPages(pageData,w){
+  const rows=pageData.rows||[];
+  document.querySelector('#pageTable tbody').innerHTML=rows.slice(0,10).map(r=>{
+    const page=r.dimensionValues[0].value;
+    const short=page.length>34?page.slice(0,32)+'…':page;
+    const s=+r.metricValues[0].value,br=+(+r.metricValues[1].value*100).toFixed(1),t=+r.metricValues[2].value;
+    return`<tr class="clk" data-p="${page.replace(/"/g,'&quot;')}">
+      <td class="name" title="${page}">${short}</td>
+      <td>${NUM.format(s)}</td><td>${br}%</td><td>${t||'—'}</td></tr>`;}).join('');
+  document.querySelectorAll('#pageTable tbody tr').forEach(tr=>tr.onclick=()=>
+    ask('For loaf.com (GA4) over '+w.label+' 2026, analyse "'+tr.dataset.p+'": where is traffic coming from, what is the bounce rate trend, and how does it contribute to transactions?'));
+}
+
+function insightCard(tag,html,acc){return`<div class="insight"><div class="ic">${tag}</div><p>${html}</p>
+  <button class="explore" data-acc="${acc||''}">Explore →</button></div>`;}
+function renderInsights(w,cur,prev,chanData){
+  const rows=chanData.rows||[];
+  const chanMeta=rows.map(r=>({
+    n:r.dimensionValues[0].value,
+    s:+r.metricValues[0].value,
+    t:+r.metricValues[1].value,
+    rv:+r.metricValues[2].value
+  })).filter(c=>c.s>N*50);
+  chanMeta.sort((a,b)=>(b.t/b.s)-(a.t/a.s));
+  const best=chanMeta[0]||{n:'—',s:0,t:0};
+  chanMeta.sort((a,b)=>b.s-a.s);
+  const topByVol=chanMeta[0]||{n:'—',s:0};
+  const sessD=pct(cur.sess,prev.sess),cvD=pct(cur.convRate,prev.convRate);
+  const engD=pct(cur.engRate,prev.engRate);
+  const cards=[
+    insightCard('Traffic momentum',`Sessions are <b>${sessD>=0?'up':'down'} ${Math.abs(sessD).toFixed(0)}%</b> while engagement rate is <b>${engD>=0?'up':'down'} ${Math.abs(engD).toFixed(0)}%</b> — ${engD>=0?'quality improving with volume':'audience is less engaged this period'}.`),
+    insightCard('Top converting channel',`<b>${best.n}</b> converts best at <b>${best.s?(best.t/best.s*100).toFixed(2):'—'}%</b> this period — ${best.s>topByVol.s*0.3?'and it has meaningful volume':'but watch its share for scale'}.`),
+    insightCard('Conversion trend',`Conversion rate is <b>${cvD>=0?'up':'down'} ${Math.abs(cvD).toFixed(0)}%</b> vs prior period — ${cur.txn} transactions from ${NUM.format(cur.sess)} sessions. ${cvD<-10?'Worth investigating if a landing page or funnel step changed.':'Holding steady.'}`),
+    insightCard('Volume leader',`<b>${topByVol.n}</b> drives the most sessions (${NUM.format(topByVol.s)}) — ${(topByVol.s/cur.sess*100).toFixed(0)}% of total traffic this period.`)
+  ];
+  const prompts=[
+    'Explain the loaf.com traffic quality trend for '+w.label+' 2026 — sessions vs engagement rate, device mix, and whether the audience changed.',
+    'Which loaf.com acquisition channel converts best for '+w.label+' 2026? Break down sessions, conversion rate, and revenue per channel, and flag where to shift spend.',
+    'Analyse loaf.com conversion rate for '+w.label+' 2026 — funnel steps, page performance, and what changed vs prior period to explain the '+dstr(cvD)+' move.',
+    'How is the "'+topByVol.n+'" channel performing for loaf.com over '+w.label+' 2026 — growth vs prior, top landing pages, and conversion efficiency?'
+  ];
+  document.getElementById('insights').innerHTML=cards.join('');
+  document.querySelectorAll('#insights .explore').forEach((b,i)=>b.onclick=()=>ask(prompts[i]));
+}
+
+function loadAll(){
+  const w=win(),my=++runId;
+  document.getElementById('window-label').textContent=w.label+' 2026  ·  vs prior '+N+' days';
+  destroy();renderShells();
+  const G=CFG.T_GA4,P=CFG.GA4_PROPERTY;
+  const live=fn=>(...a)=>{if(my===runId)try{fn(...a);}catch(e){console.error(e);}};
+  let cur,prev;
+  try{
+    cur=sliceWindow(w.cS,w.cE);prev=sliceWindow(w.pS,w.pE);
+    renderKPIs(cur,prev);
+    renderTrend(cur);
+  }catch(e){showErr(e.message||String(e));}
+  const pChan=mcp(G,{property_id:P,date_ranges:[{start_date:w.cS,end_date:w.cE}],
+    dimensions:['sessionDefaultChannelGroup'],
+    metrics:['sessions','transactions','purchaseRevenue'],
+    order_bys:[{metric:{metric_name:'sessions'},desc:true}]});
+  const pPages=mcp(G,{property_id:P,date_ranges:[{start_date:w.cS,end_date:w.cE}],
+    dimensions:['landingPage'],
+    metrics:['sessions','bounceRate','transactions'],
+    order_bys:[{metric:{metric_name:'sessions'},desc:true}],
+    limit:10});
+  pChan.then(live(r=>{renderMix(r);renderChans(r,w);})).catch(()=>{});
+  pPages.then(live(r=>renderPages(r,w))).catch(()=>{});
+  Promise.all([pChan]).then(live(([chan])=>renderInsights(w,cur,prev,chan))).catch(()=>{});
+}
+function setTabs(){
+  document.querySelectorAll('#tabs .tab').forEach(t=>{
+    t.classList.toggle('on',+t.dataset.n===N);
+    t.onclick=()=>{N=+t.dataset.n;setTabs();loadAll();};
+  });
+}
+(async function(){
+  if(!window.cowork||!window.cowork.callMcpTool){showErr('connector bridge unavailable in this view.');return;}
+  setTabs();renderShells();
+  try{await loadBase();REF=detectRef();}
+  catch(e){showErr(e.message||String(e));REF=isoAdd(TODAY,-1);}
+  loadAll();
+})();
+</script>
+</body>
+</html>
